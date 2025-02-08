@@ -1,0 +1,227 @@
+[
+    {
+        "model": "nurse.employee",
+        "pk": 1,
+        "fields": {
+            "first_name": "Ana",
+            "last_name": "Petrović",
+            "departments": [1],
+            "roles": [1],
+            "max_weekly_hours": 48,
+            "max_daily_hours": 12,
+            "available_days": [1, 2, 3, 4, 5, 6],
+            "can_work_shifts": [1, 2, 3, 4],
+            "priority": 1
+        }
+    },
+    {
+        "model": "nurse.employee",
+        "pk": 2,
+        "fields": {
+            "first_name": "Marko",
+            "last_name": "Kovač",
+            "departments": [1],
+            "roles": [1],
+            "max_weekly_hours": 36,
+            "max_daily_hours": 6,
+            "available_days": [1, 2, 3, 4, 5],
+            "can_work_shifts": [1, 2, 3],
+            "priority": 2
+        }
+    },
+    {
+        "model": "nurse.employee",
+        "pk": 3,
+        "fields": {
+            "first_name": "Luka",
+            "last_name": "Horvat",
+            "departments": [1],
+            "roles": [1],
+            "max_weekly_hours": 40,
+            "max_daily_hours": 10,
+            "available_days": [2, 3, 4, 5, 6, 7],
+            "can_work_shifts": [2, 3, 4],
+            "priority": 3
+        }
+    },
+    {
+        "model": "nurse.employee",
+        "pk": 4,
+        "fields": {
+            "first_name": "Ivana",
+            "last_name": "Babić",
+            "departments": [1],
+            "roles": [2],
+            "max_weekly_hours": 30,
+            "max_daily_hours": 6,
+            "available_days": [1, 3, 5, 6],
+            "can_work_shifts": [1, 3],
+            "priority": 4
+        }
+    },
+    {
+        "model": "nurse.employee",
+        "pk": 5,
+        "fields": {
+            "first_name": "Katarina",
+            "last_name": "Novak",
+            "departments": [1],
+            "roles": [2],
+            "max_weekly_hours": 50,
+            "max_daily_hours": 12,
+            "available_days": [1, 2, 3, 4, 5, 6, 7],
+            "can_work_shifts": [1, 2, 3, 4],
+            "priority": 5
+        }
+    },
+    {
+        "model": "nurse.employee",
+        "pk": 6,
+        "fields": {
+            "first_name": "Filip",
+            "last_name": "Jurić",
+            "departments": [1],
+            "roles": [1],
+            "max_weekly_hours": 20,
+            "max_daily_hours": 5,
+            "available_days": [1, 2, 3],
+            "can_work_shifts": [1, 2],
+            "priority": 6
+        }
+    },
+    {
+        "model": "nurse.employee",
+        "pk": 7,
+        "fields": {
+            "first_name": "Petra",
+            "last_name": "Matić",
+            "departments": [1],
+            "roles": [1],
+            "max_weekly_hours": 45,
+            "max_daily_hours": 9,
+            "available_days": [2, 3, 4, 5, 6],
+            "can_work_shifts": [2, 3, 4],
+            "priority": 7
+        }
+    },
+    {
+        "model": "nurse.employee",
+        "pk": 8,
+        "fields": {
+            "first_name": "Toni",
+            "last_name": "Perić",
+            "departments": [1],
+            "roles": [2],
+            "max_weekly_hours": 35,
+            "max_daily_hours": 7,
+            "available_days": [1, 2, 4, 5, 6],
+            "can_work_shifts": [1, 3],
+            "priority": 8
+        }
+    },
+    {
+        "model": "nurse.employee",
+        "pk": 9,
+        "fields": {
+            "first_name": "Martina",
+            "last_name": "Benković",
+            "departments": [1],
+            "roles": [2],
+            "max_weekly_hours": 38,
+            "max_daily_hours": 8,
+            "available_days": [1, 2, 3, 4, 5],
+            "can_work_shifts": [1, 2, 3],
+            "priority": 9
+        }
+    },
+    {
+        "model": "nurse.employee",
+        "pk": 10,
+        "fields": {
+            "first_name": "Dario",
+            "last_name": "Sertić",
+            "departments": [1],
+            "roles": [1],
+            "max_weekly_hours": 25,
+            "max_daily_hours": 5,
+            "available_days": [2, 3, 4],
+            "can_work_shifts": [2, 4],
+            "priority": 10
+        }
+    },
+    {
+        "model": "nurse.employee",
+        "pk": 11,
+        "fields": {
+            "first_name": "Nina",
+            "last_name": "Krnić",
+            "departments": [1],
+            "roles": [2],
+            "max_weekly_hours": 32,
+            "max_daily_hours": 7,
+            "available_days": [1, 2, 3, 5, 6],
+            "can_work_shifts": [1, 2, 3, 4],
+            "priority": 11
+        }
+    },
+    {
+        "model": "nurse.employee",
+        "pk": 12,
+        "fields": {
+            "first_name": "Ivan",
+            "last_name": "Bilić",
+            "departments": [1],
+            "roles": [1],
+            "max_weekly_hours": 44,
+            "max_daily_hours": 10,
+            "available_days": [3, 4, 5, 6, 7],
+            "can_work_shifts": [1, 3],
+            "priority": 12
+        }
+    },
+    {
+        "model": "nurse.employee",
+        "pk": 13,
+        "fields": {
+            "first_name": "Laura",
+            "last_name": "Medak",
+            "departments": [1],
+            "roles": [2],
+            "max_weekly_hours": 28,
+            "max_daily_hours": 6,
+            "available_days": [1, 2, 3, 4, 5],
+            "can_work_shifts": [2, 3],
+            "priority": 13
+        }
+    },
+    {
+        "model": "nurse.employee",
+        "pk": 14,
+        "fields": {
+            "first_name": "Igor",
+            "last_name": "Grgić",
+            "departments": [1],
+            "roles": [1],
+            "max_weekly_hours": 46,
+            "max_daily_hours": 11,
+            "available_days": [1, 3, 4, 5, 6, 7],
+            "can_work_shifts": [1, 2, 3, 4],
+            "priority": 14
+        }
+    },
+    {
+        "model": "nurse.employee",
+        "pk": 15,
+        "fields": {
+            "first_name": "Maja",
+            "last_name": "Jukić",
+            "departments": [1],
+            "roles": [2],
+            "max_weekly_hours": 30,
+            "max_daily_hours": 6,
+            "available_days": [1, 2, 4, 5, 6],
+            "can_work_shifts": [1, 3],
+            "priority": 15
+        }
+    }
+]

@@ -1,0 +1,23 @@
+python manage.py loaddata nurse/fixtures/shifts.json
+
+pip install -r requirements.txt
+
+
+rm db.sqlite3
+find . -path "*/migrations/*.py" -not -name "__init__.py" -delete
+python manage.py makemigrations nurse
+python manage.py migrate
+ Applying sessions.0001_initial... OK
+gitpod /workspace/SG (main) $ python manage.py loaddata nurse/fixtures/days.json
+Installed 7 object(s) from 1 fixture(s)
+gitpod /workspace/SG (main) $ python manage.py loaddata nurse/fixtures/departments.json
+Installed 1 object(s) from 1 fixture(s)
+gitpod /workspace/SG (main) $ python manage.py loaddata nurse/fixtures/roles.json
+Installed 2 object(s) from 1 fixture(s)
+gitpod /workspace/SG (main) $ python manage.py loaddata nurse/fixtures/shift_types.json
+Installed 4 object(s) from 1 fixture(s)
+gitpod /workspace/SG (main) $ python manage.py loaddata nurse/fixtures/employees.json
+Installed 15 object(s) from 1 fixture(s)
+gitpod /workspace/SG (main) $ python manage.py loaddata nurse/fixtures/shift_requirements.json
+Installed 14 object(s) from 1 fixture(s)
+gitpod /workspace/SG (main) $ 

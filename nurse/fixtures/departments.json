@@ -1,0 +1,9 @@
+[
+    {
+        "model": "nurse.department",
+        "pk": 1,
+        "fields": {
+            "name": "Nurse"
+        }
+    }
+]

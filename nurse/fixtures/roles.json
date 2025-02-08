@@ -1,0 +1,18 @@
+[
+    {
+        "model": "nurse.role",
+        "pk": 1,
+        "fields": {
+            "name": "Nurse Senior",
+            "department": 1
+        }
+    },
+    {
+        "model": "nurse.role",
+        "pk": 2,
+        "fields": {
+            "name": "Nurse Junior",
+            "department": 1
+        }
+    }
+]

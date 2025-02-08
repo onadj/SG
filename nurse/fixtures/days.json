@@ -1,0 +1,51 @@
+[
+    {
+        "model": "nurse.day",
+        "pk": 1,
+        "fields": {
+            "name": "Monday"
+        }
+    },
+    {
+        "model": "nurse.day",
+        "pk": 2,
+        "fields": {
+            "name": "Tuesday"
+        }
+    },
+    {
+        "model": "nurse.day",
+        "pk": 3,
+        "fields": {
+            "name": "Wednesday"
+        }
+    },
+    {
+        "model": "nurse.day",
+        "pk": 4,
+        "fields": {
+            "name": "Thursday"
+        }
+    },
+    {
+        "model": "nurse.day",
+        "pk": 5,
+        "fields": {
+            "name": "Friday"
+        }
+    },
+    {
+        "model": "nurse.day",
+        "pk": 6,
+        "fields": {
+            "name": "Saturday"
+        }
+    },
+    {
+        "model": "nurse.day",
+        "pk": 7,
+        "fields": {
+            "name": "Sunday"
+        }
+    }
+]

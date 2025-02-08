@@ -1,0 +1,12 @@
+Django>=5.1.6
+django-jazzmin
+django-import-export
+pandas
+openpyxl
+djangorestframework
+djangorestframework-simplejwt
+django-filter
+django-extensions
+gunicorn
+whitenoise
+psycopg2-binary  # Ako koristiš PostgreSQL, zamijeni s mysqlclient ako koristiš MySQL
