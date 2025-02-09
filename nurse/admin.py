@@ -76,6 +76,13 @@ class EmployeeAdmin(admin.ModelAdmin):
 
         return super().changelist_view(request, extra_context=extra_context)
 
+from django.contrib import admin
+from django.http import HttpResponse
+import csv
+import pandas as pd
+from django.apps import apps
+from .models import Shift
+
 # === 📌 SHIFT ADMIN ===
 @admin.register(Shift)
 class ShiftAdmin(admin.ModelAdmin):
@@ -151,13 +158,13 @@ class ShiftAdmin(admin.ModelAdmin):
         writer.writerow(["Employee", "Department", "Role", "Date", "Start Time", "End Time", "Total Hours"])
         for shift in queryset:
             writer.writerow([
-                shift.get_employee_full_name(), 
+                self.get_employee_full_name(shift),  # Poziv metode unutar Admin klase
                 shift.department, 
-                shift.get_role_name(), 
+                self.get_role_name(shift), 
                 shift.date, 
                 shift.start_time, 
                 shift.end_time, 
-                shift.corrected_total_hours()
+                self.corrected_total_hours(shift)
             ])
         return response
 
@@ -167,13 +174,13 @@ class ShiftAdmin(admin.ModelAdmin):
         response['Content-Disposition'] = 'attachment; filename="shifts.xlsx"'
         df = pd.DataFrame([
             [
-                shift.get_employee_full_name(), 
+                self.get_employee_full_name(shift),  # Poziv metode unutar Admin klase
                 shift.department, 
-                shift.get_role_name(), 
+                self.get_role_name(shift), 
                 shift.date, 
                 shift.start_time, 
                 shift.end_time, 
-                shift.corrected_total_hours()
+                self.corrected_total_hours(shift)
             ]
             for shift in queryset
         ], columns=["Employee", "Department", "Role", "Date", "Start Time", "End Time", "Total Hours"])
