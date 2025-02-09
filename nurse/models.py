@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.urls import reverse
 
 DAYS_OF_WEEK = [
     ('Monday', 'Monday'), ('Tuesday', 'Tuesday'), ('Wednesday', 'Wednesday'),
@@ -79,31 +80,30 @@ class ShiftRequirement(models.Model):
         return f"{self.department.name} - {self.date} (Total: {self.required_hours}h)"
 
 class Shift(models.Model):
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, null=True, blank=True)  # DOZVOLJAVA NULL
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, null=True, blank=True)
     department = models.ForeignKey(Department, on_delete=models.CASCADE)
-    role = models.ForeignKey(Role, on_delete=models.CASCADE, null=True, blank=True)  # Ako nema radnika, nema ni uloge
+    role = models.ForeignKey(Role, on_delete=models.CASCADE, null=True, blank=True)
     date = models.DateField()
-    start_time = models.TimeField(null=True, blank=True)  # Prazna smjena nema vrijeme
-    end_time = models.TimeField(null=True, blank=True)
+    start_time = models.TimeField()
+    end_time = models.TimeField()
 
     def calculate_total_hours(self):
-        """Izračun ukupnih sati rada, uključujući smjene koje prelaze ponoć."""
-        if not self.start_time or not self.end_time:  # Ako nema vremena, nema ni sati
-            return 0
-
         start_seconds = self.start_time.hour * 3600 + self.start_time.minute * 60
         end_seconds = self.end_time.hour * 3600 + self.end_time.minute * 60
 
-        if end_seconds < start_seconds:  # Ako prelazi ponoć
+        if end_seconds < start_seconds:
             total_seconds = (24 * 3600 - start_seconds) + end_seconds
         else:
             total_seconds = end_seconds - start_seconds
 
         return round(total_seconds / 3600, 2)
 
-    def __str__(self):
-        return f"{self.employee if self.employee else '⚠️ NEDOSTAJE RADNIK'} - {self.date} {self.start_time if self.start_time else '??'} - {self.end_time if self.end_time else '??'}"
+    def get_admin_edit_url(self):
+        """Vrati URL za editiranje ove smjene u Django adminu."""
+        return reverse("admin:nurse_shift_change", args=[self.id])
 
+    def __str__(self):
+        return f"{self.employee} - {self.date} {self.start_time} - {self.end_time}"
 
 # === TIME OFF ===
 class TimeOff(models.Model):
