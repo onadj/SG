@@ -1,21 +1,26 @@
 import pandas as pd
 import csv
 from django.http import JsonResponse, HttpResponse
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from .models import Shift
 from .utils import generate_nurse_schedule
 from datetime import date, timedelta
 from django.urls import reverse
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+from .models import Shift, Employee
+import json
 
 @login_required
 def nurse_schedule(request):
     shifts = Shift.objects.all().order_by("date", "start_time")
-    
-    for shift in shifts:
-        shift.admin_edit_url = shift.get_admin_edit_url()
-    
-    return render(request, "nurse/schedule.html", {"shifts": shifts})
+    employees = Employee.objects.all()  # Dohvati sve zaposlenike
+
+    return render(request, "nurse/schedule.html", {
+        "shifts": shifts,
+        "employees": employees  # Prosljeđujemo zaposlenike u template
+    })
 
 
 @login_required
@@ -69,3 +74,42 @@ def export_schedule_excel(request):
 
     df.to_excel(response, index=False)
     return response
+
+@csrf_exempt  # Omogućava brisanje bez problema s CSRF tokenom
+@login_required
+def delete_shift(request, shift_id):
+    if request.method == "POST":
+        shift = get_object_or_404(Shift, id=shift_id)
+        shift.delete()
+        return JsonResponse({"status": "success", "message": "Shift deleted successfully!"})
+    return JsonResponse({"status": "error", "message": "Invalid request"}, status=400)
+
+
+@csrf_exempt
+@login_required
+def delete_shift(request, shift_id):
+    if request.method == "POST":
+        shift = get_object_or_404(Shift, id=shift_id)
+        shift.delete()
+        return JsonResponse({"status": "success", "message": "Shift deleted successfully!"})
+    return JsonResponse({"status": "error", "message": "Invalid request"}, status=400)
+
+@csrf_exempt
+@login_required
+def edit_shift(request, shift_id):
+    if request.method == "POST":
+        shift = get_object_or_404(Shift, id=shift_id)
+        data = json.loads(request.body)
+
+        try:
+            shift.employee = Employee.objects.get(id=data["employee"]) if data["employee"] else None
+            shift.date = data["date"]
+            shift.start_time = data["start_time"]
+            shift.end_time = data["end_time"]
+            shift.save()
+
+            return JsonResponse({"status": "success", "message": "Shift updated successfully!"})
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=400)
+
+    return JsonResponse({"status": "error", "message": "Invalid request"}, status=400)

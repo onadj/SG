@@ -1,7 +1,5 @@
 {% extends "core/base.html" %}
 
-
-
 {% block content %}
 <div class="container mt-4">
     <h2 class="text-center">Nurse Schedule</h2>
@@ -29,7 +27,7 @@
         </thead>
         <tbody>
             {% for shift in shifts %}
-            <tr>
+            <tr id="shift-{{ shift.id }}">
                 <td>
                     {% if shift.employee %}
                         {{ shift.employee.first_name }} {{ shift.employee.last_name }}
@@ -44,34 +42,199 @@
                 <td>{{ shift.end_time }}</td>
                 <td>{{ shift.calculate_total_hours }}</td>
                 <td>
-                    {% if shift.employee is None %}
-                        <a href="{{ shift.admin_edit_url }}" class="btn btn-warning btn-sm">Edit</a>
-                    {% endif %}
+                    <button class="btn {% if shift.employee is None %}btn-danger{% else %}btn-warning{% endif %} btn-sm edit-shift" 
+                            data-shift-id="{{ shift.id }}" 
+                            data-employee="{{ shift.employee.id|default:'' }}"
+                            data-department="{{ shift.department.id }}"
+                            data-role="{{ shift.role.id|default:'' }}"
+                            data-date="{{ shift.date }}"
+                            data-start="{{ shift.start_time }}"
+                            data-end="{{ shift.end_time }}">
+                        Edit
+                    </button>
+                    <button class="btn btn-danger btn-sm delete-shift" data-shift-id="{{ shift.id }}">Delete</button>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 
- <!-- Export & Generate Buttons -->
-<div class="text-center mt-4">
-    <button id="generateSchedule" class="btn btn-success">Generate Schedule</button>
-    <a href="{% url 'export_schedule_csv' %}" class="btn btn-primary">Export CSV</a>
-    <a href="{% url 'export_schedule_excel' %}" class="btn btn-info">Export Excel</a>
+    <!-- Export & Generate Buttons -->
+    <div class="text-center mt-4">
+        <button id="generateSchedule" class="btn btn-success">Generate Schedule</button>
+        <a href="{% url 'export_schedule_csv' %}" class="btn btn-primary">Export CSV</a>
+        <a href="{% url 'export_schedule_excel' %}" class="btn btn-info">Export Excel</a>
+    </div>
 </div>
 
+<!-- Modal za uređivanje smjene -->
+<div class="modal fade" id="editShiftModal" tabindex="-1" aria-labelledby="editShiftLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editShiftLabel">Edit Shift</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editShiftForm">
+                    <input type="hidden" id="editShiftId">
+                    <div class="mb-3">
+                        <label for="editEmployee" class="form-label">Employee</label>
+                        <select class="form-control" id="editEmployee">
+                            <option value="">-- Select Employee --</option>
+                            {% for employee in employees %}
+                                <option value="{{ employee.id }}">{{ employee.first_name }} {{ employee.last_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editDate" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="editDate">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editStartTime" class="form-label">Start Time</label>
+                        <input type="time" class="form-control" id="editStartTime">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editEndTime" class="form-label">End Time</label>
+                        <input type="time" class="form-control" id="editEndTime">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Uključi SweetAlert2 i Bootstrap -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<!-- Uključi CSRF token -->
 <script>
+    function getCSRFToken() {
+        return document.querySelector("[name=csrfmiddlewaretoken]").value;
+    }
+
+    // 📌 GENERATE SCHEDULE
     document.getElementById("generateSchedule").addEventListener("click", function () {
         fetch("{% url 'generate_schedule' %}", { method: "GET" })
         .then(response => response.json())
         .then(data => {
+            Swal.fire({
+                title: "Schedule Generated",
+                text: "The schedule has been successfully generated!",
+                icon: "success"
+            }).then(() => location.reload());  // Osvježi stranicu
+        })
+        .catch(error => {
+            Swal.fire("Error!", "Failed to generate schedule.", "error");
+            console.error("Error:", error);
+        });
+    });
+
+    // 📌 DELETE SHIFT - Uklanja smjenu odmah iz tablice
+    document.querySelectorAll(".delete-shift").forEach(button => {
+        button.addEventListener("click", function () {
+            let shiftId = this.getAttribute("data-shift-id");
+
+            Swal.fire({
+                title: "Are you sure?",
+                text: "This shift will be permanently deleted!",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#d33",
+                cancelButtonColor: "#3085d6",
+                confirmButtonText: "Yes, delete it!"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`/nurse/schedule/delete/${shiftId}/`, {
+                        method: "POST",
+                        headers: { 
+                            "X-CSRFToken": "{{ csrf_token }}",
+                            "Content-Type": "application/json"
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === "success") {
+                            Swal.fire("Deleted!", "The shift has been removed.", "success").then(() => {
+                                document.getElementById(`shift-${shiftId}`).remove();  // Ukloni shift iz tablice
+                            });
+                        } else {
+                            Swal.fire("Error!", "Something went wrong.", "error");
+                        }
+                    })
+                    .catch(error => {
+                        Swal.fire("Error!", "An unexpected error occurred.", "error");
+                        console.error("Error:", error);
+                    });
+                }
+            });
+        });
+    });
+
+    // 📌 EDIT SHIFT - Prikazuje modal s trenutnim podacima
+    document.querySelectorAll(".edit-shift").forEach(button => {
+        button.addEventListener("click", function () {
+            let shiftId = this.getAttribute("data-shift-id");
+            let employeeId = this.getAttribute("data-employee");
+            let date = this.getAttribute("data-date");
+            let startTime = this.getAttribute("data-start");
+            let endTime = this.getAttribute("data-end");
+
+            document.getElementById("editShiftId").value = shiftId;
+            document.getElementById("editEmployee").value = employeeId || "";
+            document.getElementById("editDate").value = date;
+            document.getElementById("editStartTime").value = startTime;
+            document.getElementById("editEndTime").value = endTime;
+
+            let modal = new bootstrap.Modal(document.getElementById("editShiftModal"));
+            modal.show();
+        });
+    });
+
+    // 📌 SUBMIT EDIT SHIFT - Ažurira shift u bazi i odmah na stranici
+    document.getElementById("editShiftForm").addEventListener("submit", function (e) {
+        e.preventDefault();
+        
+        let shiftId = document.getElementById("editShiftId").value;
+        let employeeId = document.getElementById("editEmployee").value;
+        let date = document.getElementById("editDate").value;
+        let startTime = document.getElementById("editStartTime").value;
+        let endTime = document.getElementById("editEndTime").value;
+
+        fetch(`/nurse/schedule/edit/${shiftId}/`, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}",
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                employee: employeeId,
+                date: date,
+                start_time: startTime,
+                end_time: endTime
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
             if (data.status === "success") {
-                alert(data.message);
-                location.reload();  // Refresh page to show new shifts
+                Swal.fire({
+                    title: "Updated!",
+                    text: "The shift has been updated successfully.",
+                    icon: "success"
+                }).then(() => location.reload());  // Osvježi stranicu nakon editiranja
+            } else {
+                Swal.fire("Error!", "Something went wrong.", "error");
             }
         })
-        .catch(error => console.error("Error:", error));
+        .catch(error => {
+            Swal.fire("Error!", "An unexpected error occurred.", "error");
+            console.error("Error:", error);
+        });
     });
+
 </script>
+
+
 
 {% endblock %}
