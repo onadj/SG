@@ -1,0 +1,63 @@
+{% extends "core/base.html" %}
+
+
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-center">Nurse Schedule</h2>
+
+    <!-- Navigacija -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-3">
+        <a class="navbar-brand" href="{% url 'home' %}">Home</a>
+        <div class="ml-auto">
+            <a class="btn btn-primary" href="{% url 'admin:index' %}">Administracija</a>
+        </div>
+    </nav>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Employee</th>
+                <th>Department</th>
+                <th>Role</th>
+                <th>Date</th>
+                <th>Start Time</th>
+                <th>End Time</th>
+                <th>Total Hours</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for shift in shifts %}
+            <tr>
+                <td>
+                    {% if shift.employee %}
+                        {{ shift.employee.first_name }} {{ shift.employee.last_name }}
+                    {% else %}
+                        <span class="text-danger">⚠️ Worker Missing</span>
+                    {% endif %}
+                </td>
+                <td>{{ shift.department }}</td>
+                <td>{{ shift.role|default:"⚠️ Role Missing" }}</td>
+                <td>{{ shift.date }}</td>
+                <td>{{ shift.start_time }}</td>
+                <td>{{ shift.end_time }}</td>
+                <td>{{ shift.calculate_total_hours }}</td>
+                <td>
+                    {% if shift.employee is None %}
+                        <a href="{{ shift.admin_edit_url }}" class="btn btn-warning btn-sm">Edit</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Export Buttons -->
+    <div class="text-center mt-4">
+        <a href="{% url 'admin:nurse_shift_changelist' %}" class="btn btn-success">Generate Schedule</a>
+        <a href="{% url 'admin:nurse_shift_changelist' %}?action=export_schedule_to_csv" class="btn btn-primary">Export CSV</a>
+        <a href="{% url 'admin:nurse_shift_changelist' %}?action=export_schedule_to_excel" class="btn btn-info">Export Excel</a>
+    </div>
+</div>
+{% endblock %}
