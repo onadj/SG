@@ -4,7 +4,7 @@ import csv
 import pandas as pd
 from django.apps import apps
 from .models import Department, Role, ShiftType, Employee, ShiftRequirement, Shift, TimeOff, Day
-from nurse.utils import generate_nurse_schedule  # Uvoz skripte za generiranje rasporeda
+from nurse.utils import generate_nurse_schedule
 from django.utils.timezone import now
 from datetime import timedelta
 from reportlab.lib.pagesizes import letter
@@ -57,14 +57,43 @@ class EmployeeAdmin(admin.ModelAdmin):
         return max(total_hours, 0.0)
     get_total_hours_last_week.short_description = "Total Hours Last 7 Days"
 
+    def changelist_view(self, request, extra_context=None):
+        Employee = apps.get_model('nurse', 'Employee')
+        all_employees = Employee.objects.all()
+
+        # ✅ Ukupni max weekly hours svih zaposlenika
+        total_max_weekly_hours = sum(emp.max_weekly_hours for emp in all_employees)
+
+        # ✅ Ukupni Total Hours Last 7 Days svih zaposlenika
+        total_hours_last_week = sum(emp.get_total_hours_last_week() for emp in all_employees)
+
+        # ✅ Dodaj statistiku u Django admin panel za Employees
+        extra_context = extra_context or {}
+        extra_context['summary_data'] = {
+            "📊 Ukupni max weekly hours": total_max_weekly_hours,
+            "📊 Ukupni Total Hours Last 7 Days": total_hours_last_week,
+        }
+
+        return super().changelist_view(request, extra_context=extra_context)
+
 # === 📌 SHIFT ADMIN ===
 @admin.register(Shift)
 class ShiftAdmin(admin.ModelAdmin):
-    list_display = ('get_employee_full_name', 'department', 'get_role_name', 'date', 'start_time', 'end_time', 'corrected_total_hours', 'get_shift_configuration', 'missing_worker')
+    list_display = (
+        'get_employee_full_name', 
+        'department', 
+        'get_role_name', 
+        'date', 
+        'start_time', 
+        'end_time', 
+        'corrected_total_hours', 
+        'display_shift_configuration', 
+        'display_missing_worker'
+    )
     search_fields = ('employee__first_name', 'employee__last_name', 'department__name', 'role__name', 'date')
     list_filter = ('department', 'role', 'date', 'start_time', 'end_time')
     ordering = ('date', 'start_time')
-    actions = ['export_schedule_to_csv', 'export_schedule_to_excel', 'export_schedule_to_pdf', 'delete_all_shifts']
+    actions = ['export_schedule_to_csv', 'export_schedule_to_excel']
 
     def get_employee_full_name(self, obj):
         return f"{obj.employee.first_name} {obj.employee.last_name}" if obj.employee else "⚠️ Worker Missing"
@@ -75,43 +104,82 @@ class ShiftAdmin(admin.ModelAdmin):
     get_role_name.short_description = "Role"
 
     def corrected_total_hours(self, obj):
-        if obj.start_time > obj.end_time:  # Noćna smjena prelazi preko ponoći
+        if obj.start_time > obj.end_time:
             total_seconds = ((24 - obj.start_time.hour) + obj.end_time.hour) * 3600 + (obj.end_time.minute - obj.start_time.minute) * 60
         else:
             total_seconds = (obj.end_time.hour * 3600 + obj.end_time.minute * 60) - (obj.start_time.hour * 3600 + obj.start_time.minute * 60)
         return round(total_seconds / 3600, 2)
     corrected_total_hours.short_description = "Total Hours"
 
-    def get_shift_configuration(self, obj):
+    def display_shift_configuration(self, obj):
         Shift = apps.get_model('nurse', 'Shift')
-        ShiftType = apps.get_model('nurse', 'ShiftType')
-
-        shift_counts = {f"{shift.start_time.strftime('%H:%M')}-{shift.end_time.strftime('%H:%M')}": 0 for shift in ShiftType.objects.all()}
         shifts_for_day = Shift.objects.filter(date=obj.date)
+        total_hours = sum(shift.calculate_total_hours() for shift in shifts_for_day)
+        return f"Total: {total_hours}h"
+    display_shift_configuration.short_description = "Daily Shift Configuration"
 
-        for shift in shifts_for_day:
-            shift_key = f"{shift.start_time.strftime('%H:%M')}-{shift.end_time.strftime('%H:%M')}"
-            shift_counts[shift_key] = shift_counts.get(shift_key, 0) + 1
-        
-        return ", ".join([f"{key}: {value}" for key, value in shift_counts.items()])
-    get_shift_configuration.short_description = "Daily Shift Configuration"
-
-    def missing_worker(self, obj):
+    def display_missing_worker(self, obj):
         return "⚠️ Worker Needed" if obj.employee is None else "✅ Filled"
-    missing_worker.short_description = "Shift Status"
+    display_missing_worker.short_description = "Shift Status"
 
     def changelist_view(self, request, extra_context=None):
         Shift = apps.get_model('nurse', 'Shift')
         Employee = apps.get_model('nurse', 'Employee')
 
+        # ✅ Izračunaj ukupne sate u rasporedu
         total_shift_hours = sum(shift.calculate_total_hours() for shift in Shift.objects.all())
-        total_employee_max_hours = sum(employee.max_weekly_hours for employee in Employee.objects.all())
 
+        # ✅ Izračunaj ukupan max weekly hours svih zaposlenika
+        total_employee_max_hours = sum(emp.max_weekly_hours for emp in Employee.objects.all())
+
+        # ✅ Izračunaj ukupan Total Hours Last 7 Days svih zaposlenika
+        total_hours_last_week = sum(emp.get_total_hours_last_week() for emp in Employee.objects.all())
+
+        # ✅ Dodaj ove vrijednosti u Django admin (da budu vidljive)
         extra_context = extra_context or {}
-        extra_context['total_shift_hours'] = total_shift_hours
-        extra_context['total_employee_max_hours'] = total_employee_max_hours
+        extra_context['total_shift_hours'] = f"📊 Ukupni sati rasporeda: {total_shift_hours}"
+        extra_context['total_employee_max_hours'] = f"📊 Ukupni max weekly hours: {total_employee_max_hours}"
+        extra_context['total_hours_last_week'] = f"📊 Ukupni Total Hours Last 7 Days: {total_hours_last_week}"
 
         return super().changelist_view(request, extra_context=extra_context)
+
+    @admin.action(description="📄 Export schedule to CSV")
+    def export_schedule_to_csv(self, request, queryset):
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="shifts.csv"'
+        writer = csv.writer(response)
+        writer.writerow(["Employee", "Department", "Role", "Date", "Start Time", "End Time", "Total Hours"])
+        for shift in queryset:
+            writer.writerow([
+                shift.get_employee_full_name(), 
+                shift.department, 
+                shift.get_role_name(), 
+                shift.date, 
+                shift.start_time, 
+                shift.end_time, 
+                shift.corrected_total_hours()
+            ])
+        return response
+
+    @admin.action(description="📊 Export schedule to Excel")
+    def export_schedule_to_excel(self, request, queryset):
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="shifts.xlsx"'
+        df = pd.DataFrame([
+            [
+                shift.get_employee_full_name(), 
+                shift.department, 
+                shift.get_role_name(), 
+                shift.date, 
+                shift.start_time, 
+                shift.end_time, 
+                shift.corrected_total_hours()
+            ]
+            for shift in queryset
+        ], columns=["Employee", "Department", "Role", "Date", "Start Time", "End Time", "Total Hours"])
+        df.to_excel(response, index=False)
+        return response
+
 
 # === 📌 SHIFT REQUIREMENT ADMIN ===
 @admin.register(ShiftRequirement)
@@ -121,7 +189,7 @@ class ShiftRequirementAdmin(admin.ModelAdmin):
     list_filter = ('department', 'date')
     ordering = ('date', 'department')
     filter_horizontal = ('shift_types', 'required_roles')
-    actions = ['generate_schedule', 'export_to_pdf']
+    actions = ['generate_schedule']
 
     def get_shift_types(self, obj):
         return ", ".join([s.name for s in obj.shift_types.all()])
@@ -136,23 +204,3 @@ class ShiftRequirementAdmin(admin.ModelAdmin):
         for requirement in queryset:
             generate_nurse_schedule(requirement.date)
         self.message_user(request, "✅ Schedule generated successfully.")
-
-    @admin.action(description="📄 Export Shift Requirements to PDF")
-    def export_to_pdf(self, request, queryset):
-        response = HttpResponse(content_type='application/pdf')
-        response['Content-Disposition'] = 'attachment; filename="shift_requirements.pdf"'
-        pdf = canvas.Canvas(response, pagesize=letter)
-        y_position = 750
-
-        pdf.setFont("Helvetica", 12)
-        pdf.drawString(100, y_position, "Shift Requirements Report")
-        y_position -= 30
-
-        for requirement in queryset:
-            text = f"{requirement.department.name} - {requirement.date} - {requirement.required_hours}h"
-            pdf.drawString(100, y_position, text)
-            y_position -= 20
-
-        pdf.showPage()
-        pdf.save()
-        return response
