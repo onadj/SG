@@ -34,15 +34,21 @@
                 <!-- Admin i login/logout -->
                 <ul class="navbar-nav ms-auto">
                     {% if user.is_authenticated %}
+                        <li class="nav-item me-2">
+                            <span class="navbar-text text-white">Welcome, {{ user.username }}!</span>
+                        </li>
                         <li class="nav-item">
                             <a class="nav-link btn btn-light text-dark me-2" href="{% url 'admin:index' %}">Admin Panel</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link btn btn-danger text-white" href="{% url 'admin:logout' %}?next=/">Logout</a>
+                            <form id="logoutForm" method="post" action="{% url 'logout' %}">
+                                {% csrf_token %}
+                                <button type="submit" class="nav-link btn btn-danger text-white">Logout</button>
+                            </form>
                         </li>
                     {% else %}
                         <li class="nav-item">
-                            <a class="nav-link btn btn-success text-white" href="{% url 'admin:login' %}">Login</a>
+                            <a class="nav-link btn btn-success text-white" href="{% url 'login' %}">Login</a>
                         </li>
                     {% endif %}
                 </ul>

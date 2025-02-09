@@ -11,16 +11,14 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from .models import Shift, Employee
 import json
+from django.contrib.auth.decorators import login_required
 
 @login_required
 def nurse_schedule(request):
     shifts = Shift.objects.all().order_by("date", "start_time")
-    employees = Employee.objects.all()  # Dohvati sve zaposlenike
-
-    return render(request, "nurse/schedule.html", {
-        "shifts": shifts,
-        "employees": employees  # Prosljeđujemo zaposlenike u template
-    })
+    employees = Employee.objects.all()
+    
+    return render(request, "nurse/schedule.html", {"shifts": shifts, "employees": employees})
 
 
 @login_required
