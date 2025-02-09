@@ -10,3 +10,4 @@ django-extensions
 gunicorn
 whitenoise
 psycopg2-binary  # Ako koristiš PostgreSQL, zamijeni s mysqlclient ako koristiš MySQL
+reportlab

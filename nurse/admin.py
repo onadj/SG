@@ -7,7 +7,8 @@ from .models import Department, Role, ShiftType, Employee, ShiftRequirement, Shi
 from nurse.utils import generate_nurse_schedule  # Uvoz skripte za generiranje rasporeda
 from django.utils.timezone import now
 from datetime import timedelta
-
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 
 # === 📌 DEPARTMENT ADMIN ===
 @admin.register(Department)
@@ -52,7 +53,8 @@ class EmployeeAdmin(admin.ModelAdmin):
     def get_total_hours_last_week(self, obj):
         Shift = apps.get_model('nurse', 'Shift')
         last_week_shifts = Shift.objects.filter(employee=obj, date__gte=now().date() - timedelta(days=7))
-        return sum(shift.calculate_total_hours() for shift in last_week_shifts)
+        total_hours = sum(shift.calculate_total_hours() for shift in last_week_shifts)
+        return max(total_hours, 0.0)
     get_total_hours_last_week.short_description = "Total Hours Last 7 Days"
 
 # === 📌 SHIFT ADMIN ===
@@ -84,26 +86,32 @@ class ShiftAdmin(admin.ModelAdmin):
         Shift = apps.get_model('nurse', 'Shift')
         ShiftType = apps.get_model('nurse', 'ShiftType')
 
-        # Pravilno inicijaliziramo shift konfiguraciju
         shift_counts = {f"{shift.start_time.strftime('%H:%M')}-{shift.end_time.strftime('%H:%M')}": 0 for shift in ShiftType.objects.all()}
-
-        # Dohvaćamo sve smjene za taj dan
         shifts_for_day = Shift.objects.filter(date=obj.date)
 
         for shift in shifts_for_day:
             shift_key = f"{shift.start_time.strftime('%H:%M')}-{shift.end_time.strftime('%H:%M')}"
-            if shift_key in shift_counts:
-                shift_counts[shift_key] += 1
-            else:
-                shift_counts[shift_key] = 1  # Inicijalizacija ako ne postoji
+            shift_counts[shift_key] = shift_counts.get(shift_key, 0) + 1
         
         return ", ".join([f"{key}: {value}" for key, value in shift_counts.items()])
-    
     get_shift_configuration.short_description = "Daily Shift Configuration"
 
     def missing_worker(self, obj):
         return "⚠️ Worker Needed" if obj.employee is None else "✅ Filled"
     missing_worker.short_description = "Shift Status"
+
+    def changelist_view(self, request, extra_context=None):
+        Shift = apps.get_model('nurse', 'Shift')
+        Employee = apps.get_model('nurse', 'Employee')
+
+        total_shift_hours = sum(shift.calculate_total_hours() for shift in Shift.objects.all())
+        total_employee_max_hours = sum(employee.max_weekly_hours for employee in Employee.objects.all())
+
+        extra_context = extra_context or {}
+        extra_context['total_shift_hours'] = total_shift_hours
+        extra_context['total_employee_max_hours'] = total_employee_max_hours
+
+        return super().changelist_view(request, extra_context=extra_context)
 
 # === 📌 SHIFT REQUIREMENT ADMIN ===
 @admin.register(ShiftRequirement)
@@ -113,7 +121,7 @@ class ShiftRequirementAdmin(admin.ModelAdmin):
     list_filter = ('department', 'date')
     ordering = ('date', 'department')
     filter_horizontal = ('shift_types', 'required_roles')
-    actions = ['generate_schedule']
+    actions = ['generate_schedule', 'export_to_pdf']
 
     def get_shift_types(self, obj):
         return ", ".join([s.name for s in obj.shift_types.all()])
@@ -128,3 +136,23 @@ class ShiftRequirementAdmin(admin.ModelAdmin):
         for requirement in queryset:
             generate_nurse_schedule(requirement.date)
         self.message_user(request, "✅ Schedule generated successfully.")
+
+    @admin.action(description="📄 Export Shift Requirements to PDF")
+    def export_to_pdf(self, request, queryset):
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename="shift_requirements.pdf"'
+        pdf = canvas.Canvas(response, pagesize=letter)
+        y_position = 750
+
+        pdf.setFont("Helvetica", 12)
+        pdf.drawString(100, y_position, "Shift Requirements Report")
+        y_position -= 30
+
+        for requirement in queryset:
+            text = f"{requirement.department.name} - {requirement.date} - {requirement.required_hours}h"
+            pdf.drawString(100, y_position, text)
+            y_position -= 20
+
+        pdf.showPage()
+        pdf.save()
+        return response
