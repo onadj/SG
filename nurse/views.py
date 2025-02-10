@@ -3,23 +3,26 @@ import csv
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from .models import Shift
+from .models import Shift, Employee
 from .utils import generate_nurse_schedule
 from datetime import date, timedelta
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
-from .models import Shift, Employee
 import json
-from django.contrib.auth.decorators import login_required
 
 @login_required
 def nurse_schedule(request):
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+
     shifts = Shift.objects.all().order_by("date", "start_time")
+    
+    if start_date and end_date:
+        shifts = shifts.filter(date__range=[start_date, end_date])
+    
     employees = Employee.objects.all()
     
     return render(request, "nurse/schedule.html", {"shifts": shifts, "employees": employees})
-
 
 @login_required
 def generate_schedule(request):
@@ -72,16 +75,6 @@ def export_schedule_excel(request):
 
     df.to_excel(response, index=False)
     return response
-
-@csrf_exempt  # Omogućava brisanje bez problema s CSRF tokenom
-@login_required
-def delete_shift(request, shift_id):
-    if request.method == "POST":
-        shift = get_object_or_404(Shift, id=shift_id)
-        shift.delete()
-        return JsonResponse({"status": "success", "message": "Shift deleted successfully!"})
-    return JsonResponse({"status": "error", "message": "Invalid request"}, status=400)
-
 
 @csrf_exempt
 @login_required

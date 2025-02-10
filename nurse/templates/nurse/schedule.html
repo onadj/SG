@@ -12,6 +12,21 @@
         </div>
     </nav>
 
+    <!-- Date Range Picker -->
+    <div class="mb-3">
+        <form id="dateRangeForm" class="form-inline">
+            <div class="form-group mx-2">
+                <label for="startDate" class="mr-2">Start Date:</label>
+                <input type="date" class="form-control" id="startDate" name="start_date">
+            </div>
+            <div class="form-group mx-2">
+                <label for="endDate" class="mr-2">End Date:</label>
+                <input type="date" class="form-control" id="endDate" name="end_date">
+            </div>
+            <button type="submit" class="btn btn-primary">Filter</button>
+        </form>
+    </div>
+
     <table class="table table-striped">
         <thead>
             <tr>
@@ -233,8 +248,19 @@
         });
     });
 
+    // 📌 DATE RANGE FILTER
+    document.getElementById("dateRangeForm").addEventListener("submit", function (e) {
+        e.preventDefault();
+        
+        const startDate = document.getElementById("startDate").value;
+        const endDate = document.getElementById("endDate").value;
+
+        if (startDate && endDate) {
+            window.location.href = `?start_date=${startDate}&end_date=${endDate}`;
+        } else {
+            Swal.fire("Error!", "Please select both start and end dates.", "error");
+        }
+    });
 </script>
-
-
 
 {% endblock %}
