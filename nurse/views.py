@@ -26,13 +26,25 @@ def nurse_schedule(request):
 
 @login_required
 def generate_schedule(request):
-    start_date = date(2025, 2, 10)
-    end_date = date(2025, 2, 16)
+    start_date_str = request.GET.get("start_date")
+    end_date_str = request.GET.get("end_date")
+
+    if start_date_str and end_date_str:
+        try:
+            start_date = date.fromisoformat(start_date_str)
+            end_date = date.fromisoformat(end_date_str)
+        except ValueError:
+            return JsonResponse({"status": "error", "message": "Invalid date format!"}, status=400)
+    else:
+        start_date = date.today()
+        end_date = start_date + timedelta(days=6)  # Ako nema unosa, generira se za sljedeću sedmicu
 
     for single_date in (start_date + timedelta(n) for n in range((end_date - start_date).days + 1)):
         generate_nurse_schedule(single_date)
 
-    return JsonResponse({"status": "success", "message": "Schedule generated successfully!"})
+    return JsonResponse({"status": "success", "message": f"Schedule generated from {start_date} to {end_date}!"})
+
+
 
 @login_required
 def export_schedule_csv(request):
