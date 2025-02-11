@@ -3,7 +3,7 @@ import csv
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from .models import Shift, Employee
+from .models import Shift, Employee, ShiftRequirement
 from .utils import generate_nurse_schedule
 from datetime import date, timedelta
 from django.urls import reverse
@@ -16,13 +16,54 @@ def nurse_schedule(request):
     end_date = request.GET.get('end_date')
 
     shifts = Shift.objects.all().order_by("date", "start_time")
-    
+    shift_requirements = ShiftRequirement.objects.all()
+
     if start_date and end_date:
         shifts = shifts.filter(date__range=[start_date, end_date])
-    
+        shift_requirements = shift_requirements.filter(date__range=[start_date, end_date])
+
     employees = Employee.objects.all()
+
+    # 📌 Ispravan izračun ukupnih dodijeljenih sati
+    total_assigned_hours = 0
+    employee_hours = {}
+
+    for shift in shifts:
+        if shift.employee:
+            # ✅ Ispravi grešku kod smjena koje prelaze ponoć
+            start_time = shift.start_time
+            end_time = shift.end_time
+
+            if end_time <= start_time:  # Ako prelazi preko ponoći
+                shift_hours = (24 - start_time.hour) + end_time.hour
+            else:
+                shift_hours = end_time.hour - start_time.hour
+            
+            total_assigned_hours += shift_hours
+
+            full_name = f"{shift.employee.first_name} {shift.employee.last_name}"
+            employee_hours[full_name] = employee_hours.get(full_name, 0) + shift_hours
+
+    # 📌 Izračun potrebnih sati iz ShiftRequirement
+    total_required_hours = sum(req.required_hours for req in shift_requirements)
+
+    # 📌 Postotak popunjenosti smjena
+    percent_filled = (total_assigned_hours / total_required_hours) * 100 if total_required_hours else 0
+
+    context = {
+        "shifts": shifts,
+        "employees": employees,
+        "total_assigned_hours": total_assigned_hours,
+        "total_required_hours": total_required_hours,
+        "percent_filled": percent_filled,
+        "employee_hours": employee_hours,
+        "start_date": start_date,
+        "end_date": end_date,
+    }
     
-    return render(request, "nurse/schedule.html", {"shifts": shifts, "employees": employees})
+    return render(request, "nurse/schedule.html", context)
+
+
 
 @login_required
 def generate_schedule(request):
@@ -43,8 +84,6 @@ def generate_schedule(request):
         generate_nurse_schedule(single_date)
 
     return JsonResponse({"status": "success", "message": f"Schedule generated from {start_date} to {end_date}!"})
-
-
 
 @login_required
 def export_schedule_csv(request):

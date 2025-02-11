@@ -17,16 +17,53 @@
         <form id="dateRangeForm" class="row g-3 align-items-center">
             <div class="col-auto">
                 <label for="startDate" class="form-label">Start Date:</label>
-                <input type="date" class="form-control" id="startDate" name="start_date">
+                <input type="date" class="form-control" id="startDate" name="start_date" value="{{ start_date }}">
             </div>
             <div class="col-auto">
                 <label for="endDate" class="form-label">End Date:</label>
-                <input type="date" class="form-control" id="endDate" name="end_date">
+                <input type="date" class="form-control" id="endDate" name="end_date" value="{{ end_date }}">
             </div>
             <div class="col-auto">
                 <button type="submit" class="btn btn-primary">Filter</button>
             </div>
         </form>
+    </div>
+
+    <!-- 📌 Statistika: Ukupni odrađeni sati & Progress Bar -->
+    <div class="mb-4">
+        <h5>Work Hours Summary</h5>
+        <p><strong>Total Required Hours:</strong> {{ total_required_hours }}h</p>
+        <p><strong>Total Assigned Hours:</strong> {{ total_assigned_hours }}h</p>
+        <div class="progress">
+            <div class="progress-bar bg-success" role="progressbar"
+                style="width: {{ percent_filled }}%;" 
+                aria-valuenow="{{ percent_filled }}" 
+                aria-valuemin="0" 
+                aria-valuemax="100">
+                {{ percent_filled|floatformat:1 }}%
+            </div>
+        </div>
+    </div>
+
+    <!-- 📌 Zbroj sati po zaposleniku -->
+    <div class="mb-4">
+        <h5>Hours by Employee</h5>
+        <table class="table table-sm table-bordered">
+            <thead>
+                <tr>
+                    <th>Employee</th>
+                    <th>Total Hours</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for employee, hours in employee_hours.items %}
+                <tr>
+                    <td>{{ employee }}</td>
+                    <td>{{ hours }}h</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 
     <table class="table table-striped">
@@ -261,6 +298,13 @@
             window.location.href = `?start_date=${startDate}&end_date=${endDate}`;
         } else {
             Swal.fire("Error!", "Please select both start and end dates.", "error");
+        }
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const progressBar = document.querySelector(".progress-bar");
+        if (progressBar) {
+            progressBar.style.width = "{{ percent_filled }}%";
         }
     });
 </script>
